@@ -28,7 +28,6 @@ A modern, responsive LinkedIn-like community platform built with HTML, CSS, and 
 1. **User Authentication**
    - ✅ Register/Login functionality using Email & Password
    - ✅ User Profile including name, email, and bio
-   - ✅ Profile picture upload and display
    - ✅ Secure authentication with Firebase Auth
 
 2. **Public Post Feed**
@@ -66,7 +65,6 @@ A modern, responsive LinkedIn-like community platform built with HTML, CSS, and 
 - **Like System**: Like/unlike posts with heart animation
 - **Comment System**: Add comments with realistic UI
 - **Share System**: Share posts and track share count
-- **Post Interactions**: Real-time like, comment, and share counts
 
 ### 🎯 Content Generation
 
