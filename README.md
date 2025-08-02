@@ -4,7 +4,7 @@ A modern, responsive LinkedIn-like community platform built with HTML, CSS, and 
 
 ## 🚀 Live Demo
 
-[Add your live demo URL here after deployment]
+**https://linkedin-clone-mvjzvyicf-apoorvs-projects-50b645af.vercel.app**
 
 ## 🛠️ Tech Stack
 
