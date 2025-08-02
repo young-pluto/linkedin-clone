@@ -85,8 +85,14 @@ const randomPostCategories = [
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('App initializing...');
     initializeApp();
     setupEventListeners();
+    
+    // Clear any stale authentication state on page load
+    clearCachedData();
+    
+    // Check authentication state
     checkAuthState();
     generateSampleData();
     startRandomPostGenerator();
@@ -448,14 +454,17 @@ function generateSamplePosts() {
 // Check authentication state
 function checkAuthState() {
     auth.onAuthStateChanged((user) => {
+        console.log('Auth state changed:', user ? 'User logged in' : 'User logged out');
         if (user) {
             currentUser = user;
+            console.log('Setting up authenticated UI for user:', user.uid);
             updateUIForAuthenticatedUser();
             loadUserProfile();
             // Load posts only when user is authenticated
             setupPostsListener();
         } else {
             currentUser = null;
+            console.log('Setting up unauthenticated UI');
             updateUIForUnauthenticatedUser();
         }
     });
@@ -463,6 +472,7 @@ function checkAuthState() {
 
 // Update UI for authenticated user
 function updateUIForAuthenticatedUser() {
+    console.log('Updating UI for authenticated user');
     authText.textContent = 'Logout';
     authBtn.querySelector('i').className = 'fas fa-sign-out-alt';
     
@@ -481,6 +491,7 @@ function updateUIForAuthenticatedUser() {
 
 // Update UI for unauthenticated user
 function updateUIForUnauthenticatedUser() {
+    console.log('Updating UI for unauthenticated user');
     authText.textContent = 'Login';
     authBtn.querySelector('i').className = 'fas fa-sign-in-alt';
     
@@ -490,7 +501,7 @@ function updateUIForUnauthenticatedUser() {
         createPostSection.style.display = 'none';
     }
     
-    // Clear posts feed
+    // Clear posts feed and show login overlay
     const postsFeed = document.getElementById('postsFeed');
     if (postsFeed) {
         postsFeed.innerHTML = `
@@ -525,8 +536,34 @@ function openAuthModal() {
             showMessage('Logged out successfully', 'success');
             // Force UI update after logout
             updateUIForUnauthenticatedUser();
-            // Navigate to home page
+            // Navigate to home page and force refresh
             navigateToPage('home');
+            // Clear any cached data
+            clearCachedData();
+            // Force the login overlay to appear
+            setTimeout(() => {
+                const postsFeed = document.getElementById('postsFeed');
+                if (postsFeed && !postsFeed.querySelector('.login-overlay')) {
+                    console.log('Forcing login overlay to appear');
+                    postsFeed.innerHTML = `
+                        <div class="login-overlay" id="loginOverlay">
+                            <div class="login-container">
+                                <div class="login-header">
+                                    <i class="fab fa-linkedin"></i>
+                                    <h2>Welcome to LinkedIn Clone</h2>
+                                    <p>Connect with professionals and share your achievements</p>
+                                </div>
+                                <div class="login-form">
+                                    <button class="btn btn-primary login-btn" onclick="openAuthModal()">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        Login or Sign Up
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 100);
         }).catch((error) => {
             showMessage('Error logging out: ' + error.message, 'error');
         }).finally(() => {
@@ -539,10 +576,32 @@ function openAuthModal() {
     }
 }
 
+// Clear cached data and force fresh state
+function clearCachedData() {
+    console.log('Clearing cached data');
+    // Clear any stored user data
+    currentUser = null;
+    
+    // Force reload of posts feed
+    const postsFeed = document.getElementById('postsFeed');
+    if (postsFeed) {
+        postsFeed.innerHTML = '';
+    }
+    
+    // Reset any cached authentication state
+    if (typeof localStorage !== 'undefined') {
+        // Clear any Firebase auth tokens that might be cached
+        localStorage.removeItem('firebase:authUser:');
+    }
+}
+
 // Close auth modal
 function closeAuthModal() {
     authModal.classList.remove('active');
     resetAuthForm();
+    
+    // Clear any cached authentication state
+    console.log('Auth modal closed, current user:', currentUser);
 }
 
 // Reset auth form
@@ -550,7 +609,7 @@ function resetAuthForm() {
     authForm.reset();
     isSignUpMode = false;
     selectedProfilePicFile = null;
-    profilePicPreview.style.display = 'none';
+    if (profilePicPreview) profilePicPreview.style.display = 'none';
     updateAuthModal();
 }
 
@@ -619,8 +678,16 @@ function handleAuthSubmit(e) {
                 }
             })
             .then(() => {
-                showMessage('Account created successfully!', 'success');
+                showMessage('Account created successfully! You are now logged in.', 'success');
                 closeAuthModal();
+                // Force refresh the UI to show logged-in state
+                setTimeout(() => {
+                    if (currentUser) {
+                        updateUIForAuthenticatedUser();
+                        loadUserProfile();
+                        setupPostsListener();
+                    }
+                }, 500);
             })
             .catch((error) => {
                 showMessage('Error creating account: ' + error.message, 'error');
@@ -1354,6 +1421,8 @@ function renderMyConnections(connections) {
 
 // Navigate to different pages
 function navigateToPage(pageName) {
+    console.log('Navigating to page:', pageName);
+    
     // Update navigation links
     navLinks.forEach(link => {
         link.classList.remove('active');
@@ -1375,6 +1444,33 @@ function navigateToPage(pageName) {
         loadProfilePage();
     } else if (pageName === 'connections' && currentUser) {
         loadAllUsers(); // Load the default tab
+    } else if (pageName === 'home') {
+        // If navigating to home and not authenticated, ensure login overlay shows
+        if (!currentUser) {
+            console.log('User not authenticated, showing login overlay on home page');
+            setTimeout(() => {
+                const postsFeed = document.getElementById('postsFeed');
+                if (postsFeed && !postsFeed.querySelector('.login-overlay')) {
+                    postsFeed.innerHTML = `
+                        <div class="login-overlay" id="loginOverlay">
+                            <div class="login-container">
+                                <div class="login-header">
+                                    <i class="fab fa-linkedin"></i>
+                                    <h2>Welcome to LinkedIn Clone</h2>
+                                    <p>Connect with professionals and share your achievements</p>
+                                </div>
+                                <div class="login-form">
+                                    <button class="btn btn-primary login-btn" onclick="openAuthModal()">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        Login or Sign Up
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 50);
+        }
     }
 }
 
